@@ -160,11 +160,12 @@ def _collapse_get_edges(graph):
 def _collapse_graph(graph):
     new_nodes, nodes_to_remove = _collapse_get_nodes(graph)
     new_edges, edges_to_remove = _collapse_get_edges(graph)
-    graph.remove_edges_from(edges_to_remove)
-    graph.add_nodes_from(new_nodes)
-    graph.add_edges_from(new_edges)
-    graph.remove_nodes_from(nodes_to_remove)
-    return graph
+    new_graph = graph.copy()
+    new_graph.remove_edges_from(edges_to_remove)
+    new_graph.add_nodes_from(new_nodes)
+    new_graph.add_edges_from(new_edges)
+    new_graph.remove_nodes_from(nodes_to_remove)
+    return new_graph
 
 
 def _build(repo, target=None, full=False, outs=False, collapse=False):
@@ -172,7 +173,7 @@ def _build(repo, target=None, full=False, outs=False, collapse=False):
     graph = _transform(repo.index, outs)
     filtered_graph = _filter(graph, targets, full)
     if collapse:
-        filtered_graph = _collapse_graph(graph)
+        filtered_graph = _collapse_graph(filtered_graph)
     return filtered_graph
 
 
@@ -183,6 +184,7 @@ class CmdDAG(CmdBase):
             target=self.args.target,
             full=self.args.full,
             outs=self.args.outs,
+            collapse=self.args.collapse,
         )
 
         if self.args.dot:
@@ -223,6 +225,13 @@ def add_parser(subparsers, parent_parser):
         default=False,
         dest="markdown",
         help="Print DAG with mermaid format wrapped in Markdown block.",
+    )
+    dag_parser.add_argument(
+        "--collapse-substages",
+        action="store_true",
+        default=False,
+        dest="collapse",
+        help="Collapse foreach/matrix stages to single stage.",
     )
     dag_parser.add_argument(
         "--full",
