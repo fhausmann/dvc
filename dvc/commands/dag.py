@@ -127,10 +127,53 @@ def _filter(graph, targets, full):
     return new_graph
 
 
-def _build(repo, target=None, full=False, outs=False):
+def _collapse_get_nodes(graph):
+    new_nodes = set()
+    nodes_to_remove = set()
+    for _node in list(graph.nodes):
+        if "@" not in _node:
+            continue
+        nodes_to_remove.add(_node)
+    new_nodes.add(_node.split("@")[0])
+    return new_nodes, nodes_to_remove
+
+
+def _collapse_get_edges(graph):
+    new_edges = set()
+    edges_to_remove = set()
+    for _e1, _e2 in list(graph.edges):
+        _replace = False
+        _new_e1 = _e1
+        _new_e2 = _e2
+        if "@" in _e1:
+            _new_e1 = _e1.split("@")[0]
+            _replace = True
+        if "@" in _e2:
+            _new_e2 = _e2.split("@")[0]
+            _replace = True
+        if _replace:
+            edges_to_remove.add((_e1, _e2))
+            new_edges.add((_new_e1, _new_e2))
+    return new_edges, edges_to_remove
+
+
+def _collapse_graph(graph):
+    new_nodes, nodes_to_remove = _collapse_get_nodes(graph)
+    new_edges, edges_to_remove = _collapse_get_edges(graph)
+    graph.remove_edges_from(edges_to_remove)
+    graph.add_nodes_from(new_nodes)
+    graph.add_edges_from(new_edges)
+    graph.remove_nodes_from(nodes_to_remove)
+    return graph
+
+
+def _build(repo, target=None, full=False, outs=False, collapse=False):
     targets = _collect_targets(repo, target, outs)
     graph = _transform(repo.index, outs)
-    return _filter(graph, targets, full)
+    filtered_graph = _filter(graph, targets, full)
+    if collapse:
+        filtered_graph = _collapse_graph(graph)
+    return filtered_graph
 
 
 class CmdDAG(CmdBase):
