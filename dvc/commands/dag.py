@@ -246,7 +246,6 @@ def add_parser(subparsers, parent_parser):
         "--collapse-foreach-matrix",
         action="store_true",
         default=False,
-        dest="collapse_foreach_matrix",
         help="Collapse foreach/matrix stages to single stage.",
     )
     dag_parser.add_argument(
