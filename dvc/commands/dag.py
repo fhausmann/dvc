@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from dvc.cli import formatter
 from dvc.cli.command import CmdBase
 from dvc.cli.utils import append_doc_link
+from dvc.exceptions import InvalidArgumentError
 from dvc.parsing import JOIN
 from dvc.ui import ui
 
@@ -180,6 +181,10 @@ def _build(repo, target=None, full=False, outs=False, collapse_foreach_matrix=Fa
 
 class CmdDAG(CmdBase):
     def run(self):
+        if self.args.outs and self.args.collapse_foreach_matrix:
+            raise InvalidArgumentError(
+                "`--outs` and `--collapse-foreach-matrix` are mutually exclusive"
+            )
         graph = _build(
             self.repo,
             target=self.args.target,
