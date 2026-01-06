@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 from dvc.cli import formatter
 from dvc.cli.command import CmdBase
 from dvc.cli.utils import append_doc_link
-from dvc.exceptions import InvalidArgumentError
 from dvc.ui import ui
 
 if TYPE_CHECKING:
@@ -190,6 +189,8 @@ def _build(repo, target=None, full=False, outs=False, collapse_foreach_matrix=Fa
 
 class CmdDAG(CmdBase):
     def run(self):
+        from dvc.exceptions import InvalidArgumentError
+
         if self.args.outs and self.args.collapse_foreach_matrix:
             raise InvalidArgumentError(
                 "`--outs` and `--collapse-foreach-matrix` are mutually exclusive"
