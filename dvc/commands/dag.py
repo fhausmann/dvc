@@ -4,7 +4,6 @@ from dvc.cli import formatter
 from dvc.cli.command import CmdBase
 from dvc.cli.utils import append_doc_link
 from dvc.exceptions import InvalidArgumentError
-from dvc.parsing import JOIN
 from dvc.ui import ui
 
 if TYPE_CHECKING:
@@ -129,17 +128,19 @@ def _filter(graph, targets, full):
     return new_graph
 
 
-def _is_foreach_matrix_stage(node):
+def _is_foreach_matrix_stage(node, join_string):
     if node.endswith(".dvc"):
         return False
-    return JOIN in node
+    return join_string in node
 
 
 def _collapse_foreach_matrix_get_nodes(graph):
+    from dvc.parsing import JOIN
+
     new_nodes = set()
     nodes_to_remove = set()
     for _node in list(graph.nodes):
-        if not _is_foreach_matrix_stage(_node):
+        if not _is_foreach_matrix_stage(_node, JOIN):
             continue
         nodes_to_remove.add(_node)
         new_nodes.add(_node.split(JOIN)[0])
@@ -147,16 +148,18 @@ def _collapse_foreach_matrix_get_nodes(graph):
 
 
 def _collapse_foreach_matrix_get_edges(graph):
+    from dvc.parsing import JOIN
+
     new_edges = set()
     edges_to_remove = set()
     for _e1, _e2 in list(graph.edges):
         _replace = False
         _new_e1 = _e1
         _new_e2 = _e2
-        if _is_foreach_matrix_stage(_e1):
+        if _is_foreach_matrix_stage(_e1, JOIN):
             _new_e1 = _e1.split(JOIN)[0]
             _replace = True
-        if _is_foreach_matrix_stage(_e2):
+        if _is_foreach_matrix_stage(_e2, JOIN):
             _new_e2 = _e2.split(JOIN)[0]
             _replace = True
         if _replace:
