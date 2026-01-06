@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from dvc.cli import formatter
 from dvc.cli.command import CmdBase
 from dvc.cli.utils import append_doc_link
+from dvc.parsing import JOIN
 from dvc.ui import ui
 
 if TYPE_CHECKING:
@@ -127,29 +128,29 @@ def _filter(graph, targets, full):
     return new_graph
 
 
-def _collapse_get_nodes(graph):
+def _collapse_foreach_matrix_get_nodes(graph):
     new_nodes = set()
     nodes_to_remove = set()
     for _node in list(graph.nodes):
-        if "@" not in _node:
+        if JOIN not in _node:
             continue
         nodes_to_remove.add(_node)
-    new_nodes.add(_node.split("@")[0])
+    new_nodes.add(_node.split(JOIN)[0])
     return new_nodes, nodes_to_remove
 
 
-def _collapse_get_edges(graph):
+def _collapse_foreach_matrix_get_edges(graph):
     new_edges = set()
     edges_to_remove = set()
     for _e1, _e2 in list(graph.edges):
         _replace = False
         _new_e1 = _e1
         _new_e2 = _e2
-        if "@" in _e1:
-            _new_e1 = _e1.split("@")[0]
+        if JOIN in _e1:
+            _new_e1 = _e1.split(JOIN)[0]
             _replace = True
-        if "@" in _e2:
-            _new_e2 = _e2.split("@")[0]
+        if JOIN in _e2:
+            _new_e2 = _e2.split(JOIN)[0]
             _replace = True
         if _replace:
             edges_to_remove.add((_e1, _e2))
@@ -157,9 +158,9 @@ def _collapse_get_edges(graph):
     return new_edges, edges_to_remove
 
 
-def _collapse_graph(graph):
-    new_nodes, nodes_to_remove = _collapse_get_nodes(graph)
-    new_edges, edges_to_remove = _collapse_get_edges(graph)
+def _collapse_foreach_matrix(graph):
+    new_nodes, nodes_to_remove = _collapse_foreach_matrix_get_nodes(graph)
+    new_edges, edges_to_remove = _collapse_foreach_matrix_get_edges(graph)
     new_graph = graph.copy()
     new_graph.remove_edges_from(edges_to_remove)
     new_graph.add_nodes_from(new_nodes)
@@ -168,12 +169,12 @@ def _collapse_graph(graph):
     return new_graph
 
 
-def _build(repo, target=None, full=False, outs=False, collapse=False):
+def _build(repo, target=None, full=False, outs=False, collapse_foreach_matrix=False):
     targets = _collect_targets(repo, target, outs)
     graph = _transform(repo.index, outs)
     filtered_graph = _filter(graph, targets, full)
-    if collapse:
-        filtered_graph = _collapse_graph(filtered_graph)
+    if collapse_foreach_matrix:
+        filtered_graph = _collapse_foreach_matrix(filtered_graph)
     return filtered_graph
 
 
@@ -184,7 +185,7 @@ class CmdDAG(CmdBase):
             target=self.args.target,
             full=self.args.full,
             outs=self.args.outs,
-            collapse=self.args.collapse,
+            collapse_foreach_matrix=self.args.collapse_foreach_matrix,
         )
 
         if self.args.dot:
@@ -227,10 +228,10 @@ def add_parser(subparsers, parent_parser):
         help="Print DAG with mermaid format wrapped in Markdown block.",
     )
     dag_parser.add_argument(
-        "--collapse-substages",
+        "--collapse-foreach-matrix",
         action="store_true",
         default=False,
-        dest="collapse",
+        dest="collapse_foreach_matrix",
         help="Collapse foreach/matrix stages to single stage.",
     )
     dag_parser.add_argument(

@@ -5,7 +5,7 @@ from dvc.cli import main, parse_args
 from dvc.commands.dag import (
     CmdDAG,
     _build,
-    _collapse_graph,
+    _collapse_foreach_matrix,
     _show_ascii,
     _show_dot,
     _show_mermaid,
@@ -57,7 +57,7 @@ def repo(tmp_dir, dvc):
     return dvc
 
 
-def test_collapse_graph(repo):
+def test_collapse_foreach_matrix(repo):
     graph = nx.DiGraph(
         [
             ("2", "1"),
@@ -85,7 +85,7 @@ def test_collapse_graph(repo):
             ("7", "6"),
         ]
     )
-    collapsed_graph = _collapse_graph(graph)
+    collapsed_graph = _collapse_foreach_matrix(graph)
     for node in collapsed_graph.nodes:
         assert JOIN not in node
     for n1, n2 in collapsed_graph.edges:
@@ -99,7 +99,9 @@ def test_build(repo):
 
 
 def test_build_collapse(repo):
-    assert nx.is_isomorphic(_build(repo, collapse=True), repo.index.graph)
+    assert nx.is_isomorphic(
+        _build(repo, collapse_foreach_matrix=True), repo.index.graph
+    )
 
 
 def test_build_target(repo):
