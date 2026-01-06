@@ -129,14 +129,20 @@ def _filter(graph, targets, full):
     return new_graph
 
 
+def _is_foreach_matrix_stage(node):
+    if node.endswith(".dvc"):
+        return False
+    return JOIN in node
+
+
 def _collapse_foreach_matrix_get_nodes(graph):
     new_nodes = set()
     nodes_to_remove = set()
     for _node in list(graph.nodes):
-        if JOIN not in _node:
+        if not _is_foreach_matrix_stage(_node):
             continue
         nodes_to_remove.add(_node)
-    new_nodes.add(_node.split(JOIN)[0])
+        new_nodes.add(_node.split(JOIN)[0])
     return new_nodes, nodes_to_remove
 
 
@@ -147,10 +153,10 @@ def _collapse_foreach_matrix_get_edges(graph):
         _replace = False
         _new_e1 = _e1
         _new_e2 = _e2
-        if JOIN in _e1:
+        if _is_foreach_matrix_stage(_e1):
             _new_e1 = _e1.split(JOIN)[0]
             _replace = True
-        if JOIN in _e2:
+        if _is_foreach_matrix_stage(_e2):
             _new_e2 = _e2.split(JOIN)[0]
             _replace = True
         if _replace:
